@@ -1,5 +1,6 @@
 const express = require("express")
 const { createServer } = require("node:http")
+const path = require("node:path")
 const { join } = require('node:path')
 const { Server } = require('socket.io')
 
@@ -26,10 +27,23 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('utilisateur déconnecté')
     });
+
+    socket.on("joinChannel", (channelName) => {
+        socket.join(channelName)
+        console.log("Utilisateur rejoint le canal " + channelName)
+    })
+
+    socket.on("CanSmessage", (data) => {
+        io.to(data.channel).emit("CanCmessage", data.message)
+    })
 })
 
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'))
+})
+
+app.get("/channel/:name", (req, res) => {
+    res.sendFile(join(__dirname, "channel.html"))
 })
 
 server.listen(port,() => {
