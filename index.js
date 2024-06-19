@@ -9,6 +9,8 @@ const server = createServer(app)
 const port = 5000
 const io = new Server(server)
 
+const usedPseudos = new Set()
+
 io.on('connection', (socket) => {
     console.log('utilisateur connecté')
 
@@ -30,12 +32,25 @@ io.on('connection', (socket) => {
 
     socket.on("joinChannel", (channelName) => {
         socket.join(channelName)
-        console.log("Utilisateur rejoint le canal " + channelName)
+        console.log("Nouvel utilisateur a rejoint le canal " + channelName)
     })
 
     socket.on("CanSmessage", (data) => {
-        io.to(data.channel).emit("CanCmessage", data.message)
+        io.to(data.channel).emit("CanCmessage", { message: data.message, id: socket.id, pseudo: socket.pseudo })
     })
+
+    socket.on("checkPseudo", (pseudo, callback) => {
+        if (usedPseudos.has(pseudo)) {
+            callback(false)
+        } else {
+            callback(true)
+        }
+    });
+
+    socket.on("setPseudo", (pseudo) => {
+        usedPseudos.add(pseudo)
+        socket.pseudo = pseudo
+    });
 })
 
 app.get('/', (req, res) => {
@@ -44,6 +59,11 @@ app.get('/', (req, res) => {
 
 app.get("/channel/:name", (req, res) => {
     res.sendFile(join(__dirname, "channel.html"))
+})
+
+app.get('/reset-pseudos', (req, res) => {
+    usedPseudos.clear();
+    res.send('Pseudos réinitialisés');
 })
 
 server.listen(port,() => {
